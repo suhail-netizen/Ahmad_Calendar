@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChronoSync - World Clock, Weather & Calendar Dashboard</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(107, 114, 128, 0.7);
+    }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    .dark .glass-panel {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    @keyframes spin-once {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .spin-animation {
+      animation: spin-once 0.8s ease-in-out;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col md:flex-row antialiased selection:bg-blue-500 selection:text-white">
+
+  <!-- Mobile Top View Switcher Navigation Bar -->
+  <div class="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-2.5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+    <div class="flex items-center space-x-2">
+      <div class="p-1.5 bg-blue-600 text-white rounded-lg">
+        <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+      </div>
+      <span class="font-bold text-sm">ChronoSync</span>
+    </div>
+    <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
+      <button id="mobileTabClock" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm transition">
+        <i class="fa-solid fa-clock mr-1"></i> Clocks
+      </button>
+      <button id="mobileTabCalendar" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 transition">
+        <i class="fa-solid fa-calendar-days mr-1"></i> Calendar
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar / World Clock Panel -->
+  <aside id="sidebarPanel" class="w-full md:w-80 lg:w-96 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col flex-shrink-0 z-20 h-[calc(100vh-53px)] md:h-screen overflow-hidden">
+    <!-- Header Logo / Brand -->
+    <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+      <div class="flex items-center space-x-3">
+        <div class="p-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-500/30">
+          <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight">ChronoSync</h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">World Clock & Weather</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <!-- Temperature Unit Toggle -->
+        <button id="unitToggleBtn" title="Toggle °C / °F" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+          °C
+        </button>
+        <!-- Theme Toggle Button -->
+        <button id="themeToggleBtn" title="Toggle Theme" class="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <i class="fa-solid fa-moon dark:hidden"></i>
+          <i class="fa-solid fa-sun hidden dark:inline"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- World Clock & Weather Widget Area -->
+    <div class="p-5 overflow-y-auto flex-1 space-y-4">
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-2">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">World Clocks & Weather</h2>
+          <button id="manualRefreshWeatherBtn" title="Refresh weather data now" class="text-slate-400 hover:text-blue-500 transition text-xs">
+            <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
+          </button>
+        </div>
+        <button id="openAddCityModalBtn" class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-1">
+          <i class="fa-solid fa-plus text-[10px]"></i> City
+        </button>
+      </div>
+
+      <!-- World Clock Cards List -->
+      <div class="worldclock space-y-3" id="worldclockList">
+        <!-- City Cards render dynamically here -->
+      </div>
+
+      <div class="mt-4 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800/90 dark:to-slate-800/40 border border-blue-100 dark:border-slate-700">
+        <h3 class="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide flex items-center gap-1.5">
+          <i class="fa-solid fa-bolt text-amber-500"></i> Meeting Overlap window
+        </h3>
+        <p class="text-xs text-slate-600 dark:text-slate-300 mt-1">
+          Optimal combined meeting hours across ET, CT, and AST are usually <strong>4:00 PM – 7:00 PM AST</strong> (8:00 AM – 11:00 AM ET).
+        </p>
+      </div>
+
+      <!-- Next Class Widget -->
+      <div id="nextClassWidget" class="mt-4 p-4 rounded-xl bg-slate-900 text-white dark:bg-slate-800 dark:border dark:border-slate-700 shadow-md transition-all duration-300">
+        <div class="flex items-center justify-between mb-2">
+          <span id="nextClassBadge" class="text-[10px] font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+            <span id="nextClassPing" class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+            <span id="nextClassLabel">Next Class</span>
+          </span>
+          <span id="nextClassCountdown" class="text-xs font-mono font-semibold bg-blue-600/30 text-blue-300 px-2 py-0.5 rounded-md border border-blue-500/30">
+            --:--:--
+          </span>
+        </div>
+        <h3 id="nextClassTitle" class="text-sm font-bold truncate">IE 336 LEC</h3>
+        <p id="nextClassName" class="text-xs text-blue-300 dark:text-blue-400 font-medium truncate mt-0.5">Operations Research II</p>
+        <div class="mt-2 text-xs text-slate-300 space-y-1">
+          <div class="flex items-center gap-2">
+            <i class="fa-regular fa-clock text-slate-400"></i>
+            <span id="nextClassTime">--:-- --</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-location-dot text-slate-400"></i>
+            <span id="nextClassLoc">BRNG 1278</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming Agenda Widget -->
+      <div class="mt-6">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">Next 2 Events (Lafayette Time)</h2>
+        <div id="sidebarAgenda" class="space-y-2">
+          <!-- Dynamic sidebar agenda items inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic Weather Status Timestamp Footer -->
+    <div class="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex-shrink-0">
+      <div id="weatherUpdateTimestamp" class="wc-updated text-[11px] text-slate-400 dark:text-slate-500 text-center flex items-center justify-center gap-1.5">
+        <i class="fa-solid fa-cloud-sun text-slate-400"></i>
+        <span>Updating weather...</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Container (Calendar) -->
+  <main id="mainCalendar" class="flex-1 hidden md:flex flex-col h-[calc(100vh-53px)] md:h-screen overflow-hidden">
+    
+    <!-- Calendar Top Navigation Bar -->
+    <header class="p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
+      <!-- Month/Year Navigation -->
+      <div class="flex items-center space-x-3">
+        <h2 id="calendarTitle" class="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">September 2026</h2>
+        <div class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+          <button id="prevMonthBtn" class="p-1.5 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 rounded-md transition">
+            <i class="fa-solid fa-chevron-left text-xs"></i>
+          </button>
+          <button id="todayBtn" class="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 rounded-md transition">
+            Today
+          </button>
+          <button id="nextMonthBtn" class="p-1.5 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 rounded-md transition">
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Actions & Filters -->
+      <div class="flex items-center space-x-3">
+        <button id="openAddEventModalBtn" class="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-md shadow-blue-500/20 transition active:scale-95">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>Add Event</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Calendar Grid Body -->
+    <div class="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-100 dark:bg-slate-950">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden h-full flex flex-col">
+        
+        <!-- Days of the week header -->
+        <div class="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-center py-2 text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 flex-shrink-0">
+          <div><span class="hidden sm:inline">SUN</span><span class="sm:hidden">S</span></div>
+          <div><span class="hidden sm:inline">MON</span><span class="sm:hidden">M</span></div>
+          <div><span class="hidden sm:inline">TUE</span><span class="sm:hidden">T</span></div>
+          <div><span class="hidden sm:inline">WED</span><span class="sm:hidden">W</span></div>
+          <div><span class="hidden sm:inline">THU</span><span class="sm:hidden">T</span></div>
+          <div><span class="hidden sm:inline">FRI</span><span class="sm:hidden">F</span></div>
+          <div><span class="hidden sm:inline">SAT</span><span class="sm:hidden">S</span></div>
+        </div>
+
+        <!-- Month Grid Container -->
+        <div id="calendarGrid" class="grid grid-cols-7 flex-1 auto-rows-fr bg-slate-200 dark:bg-slate-800 gap-[1px]">
+          <!-- Dynamic calendar cells generated by JavaScript -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Event Modal (Create / Edit Event) -->
+  <div id="eventModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full shadow-2xl overflow-hidden transform transition-all">
+      <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+        <h3 id="modalTitle" class="text-lg font-bold">Add Event</h3>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      
+      <form id="eventForm" class="p-5 space-y-4">
+        <input type="hidden" id="eventId">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Event Title</label>
+          <input type="text" id="eventTitleInput" required placeholder="Team Sync, Class, Exam..." class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Date</label>
+            <input type="date" id="eventDateInput" required class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Time</label>
+            <input type="time" id="eventTimeInput" required class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Timezone Context</label>
+          <select id="eventTzInput" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+            <option value="America/Indiana/Indianapolis">America/Indiana (W. Lafayette - ET)</option>
+            <option value="America/Chicago">America/Chicago (Evanston - CT)</option>
+            <option value="Asia/Riyadh">Asia/Riyadh (AST)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Category Color</label>
+          <select id="eventCategoryInput" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+            <option value="blue">Blue (Work / General)</option>
+            <option value="emerald">Green (Class / Academic)</option>
+            <option value="purple">Purple (Personal)</option>
+            <option value="amber">Amber (Important / Travel)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Repeat / Recurrence</label>
+          <select id="eventRepeatInput" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+            <option value="none">Does not repeat</option>
+            <option value="weekly_semester">Weekly until Semester End (Dec 18, 2026)</option>
+          </select>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end space-x-3">
+          <button type="button" id="cancelModalBtn" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm">
+            Save Event
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Detailed Weather Forecast Modal -->
+  <div id="weatherDetailModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full shadow-2xl overflow-hidden transform transition-all">
+      <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+        <div>
+          <h3 id="weatherModalCity" class="text-xl font-bold">City Weather</h3>
+          <p id="weatherModalCountry" class="text-xs text-blue-100 opacity-90">Location details</p>
+        </div>
+        <button id="closeWeatherModalBtn" class="text-white/80 hover:text-white text-xl">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <!-- Current Main Weather Display -->
+        <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700">
+          <div class="flex items-center gap-4">
+            <span id="weatherModalEmoji" class="text-5xl">☀️</span>
+            <div>
+              <div id="weatherModalTemp" class="text-3xl font-extrabold text-slate-900 dark:text-white">--°C</div>
+              <div id="weatherModalCondition" class="text-sm font-medium text-slate-600 dark:text-slate-300">Clear sky</div>
+            </div>
+          </div>
+          <div class="text-right text-xs space-y-1 text-slate-500 dark:text-slate-400">
+            <div>Feels like: <span id="weatherModalFeelsLike" class="font-semibold text-slate-800 dark:text-slate-200">--</span></div>
+            <div>Humidity: <span id="weatherModalHumidity" class="font-semibold text-slate-800 dark:text-slate-200">--</span></div>
+            <div>Wind: <span id="weatherModalWind" class="font-semibold text-slate-800 dark:text-slate-200">--</span></div>
+          </div>
+        </div>
+
+        <!-- 3-Day Forecast Cards -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">3-Day Forecast</h4>
+          <div id="weatherForecastContainer" class="grid grid-cols-3 gap-3">
+            <!-- Forecast Days rendered via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add City Search Modal -->
+  <div id="addCityModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full shadow-2xl overflow-hidden">
+      <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+        <h3 class="text-lg font-bold">Add World City</h3>
+        <button id="closeAddCityModalBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Search City Name</label>
+          <div class="relative">
+            <input type="text" id="citySearchInput" placeholder="e.g. Tokyo, London, New York..." class="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+          </div>
+        </div>
+
+        <div id="citySearchResults" class="space-y-2 max-h-48 overflow-y-auto">
+          <p class="text-xs text-slate-400 text-center py-3">Type a city name to search...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // System State Variables
+    let currentDate = new Date(2026, 8, 13); // Sep 2026 per schedule
+    let selectedDate = new Date();
+    let tempUnit = localStorage.getItem('chrono_temp_unit') || 'C'; // 'C' or 'F'
+    let lastWeatherFetchTime = null;
+
+    // Course Title Mapping Dictionary
+    const courseTitles = {
+      'IE 332 LEC': 'Computing in Industrial Engineering (LEC)',
+      'IE 332 LAB': 'Computing in Industrial Engineering (LAB)',
+      'IE 332 REC': 'Computing in Industrial Engineering (REC)',
+      'IE 336 LEC': 'Operations Research II: Stochastic Models',
+      'IE 386 LEC': 'Work Analysis and Design I',
+      'IE 383 LEC': 'Integrated Production Systems I'
+    };
+
+    // Reordered Default Cities List: West Lafayette -> Evanston -> Riyadh
+    const defaultCities = [
+      { id: 'lafayette', name: 'West Lafayette', country: 'Indiana, US (ET)', lat: 40.4259, lon: -86.9081, tz: 'America/Indiana/Indianapolis', isDefault: true },
+      { id: 'evanston', name: 'Evanston', country: 'Illinois, US (CT)', lat: 42.0534, lon: -87.6824, tz: 'America/Chicago', isDefault: true },
+      { id: 'riyadh', name: 'Riyadh', country: 'Saudi Arabia (AST)', lat: 24.7136, lon: 46.6753, tz: 'Asia/Riyadh', isDefault: true }
+    ];
+
+    let cities = JSON.parse(localStorage.getItem('chrono_cities_v2')) || defaultCities;
+    let weatherCache = {}; // Stores fetched weather data mapped by city ID
+
+    // Generator for accurate IE semester class schedule
+    function generateSemesterSchedule() {
+      const baseEvents = [
+        { title: 'IE 336 LEC', name: 'Operations Research II: Stochastic Models', time: '07:30', tz: 'America/Indiana/Indianapolis', category: 'blue', location: 'BRNG 1278', days: [2, 4] },
+        { title: 'IE 386 LEC', name: 'Work Analysis and Design I', time: '10:00', tz: 'America/Indiana/Indianapolis', category: 'purple', location: 'WALC 3087', days: [2, 4] },
+        { title: 'IE 332 LEC', name: 'Computing in Industrial Engineering', time: '11:00', tz: 'America/Indiana/Indianapolis', category: 'emerald', location: 'MTHW 210', days: [1, 3] },
+        { title: 'IE 332 REC', name: 'Computing in Industrial Engineering (Recitation)', time: '11:00', tz: 'America/Indiana/Indianapolis', category: 'emerald', location: 'MTHW 210', days: [5] },
+        { title: 'IE 332 LAB', name: 'Computing in Industrial Engineering (Lab)', time: '12:30', tz: 'America/Indiana/Indianapolis', category: 'emerald', location: 'DUDL 3447', days: [1] },
+        { title: 'IE 383 LEC', name: 'Integrated Production Systems I', time: '15:00', tz: 'America/Indiana/Indianapolis', category: 'purple', location: 'BRNG 2280', days: [2, 4] }
+      ];
+
+      const purdueBreaks = [
+        '2026-09-07', 
+        '2026-10-12', 
+        '2026-10-13', 
+        '2026-11-25', 
+        '2026-11-26', 
+        '2026-11-27', 
+        '2026-11-28'
+      ];
+
+      const generated = [];
+      const startDate = new Date(2026, 7, 30);
+      const endDate = new Date(2026, 11, 18);
+      let curr = new Date(startDate);
+      let idCounter = 1;
+
+      while (curr <= endDate) {
+        const dayOfWeek = curr.getDay();
+        const dateStr = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`;
+
+        if (!purdueBreaks.includes(dateStr)) {
+          baseEvents.forEach(c => {
+            if (c.days.includes(dayOfWeek)) {
+              generated.push({
+                id: `sem_${idCounter++}`,
+                title: c.title,
+                name: c.name,
+                date: dateStr,
+                time: c.time,
+                tz: c.tz,
+                category: c.category,
+                location: c.location
+              });
+            }
+          });
+        }
+        curr.setDate(curr.getDate() + 1);
+      }
+      return generated;
+    }
+
+    let storedEvents = localStorage.getItem('chrono_events_v3');
+    let events = storedEvents ? JSON.parse(storedEvents) : generateSemesterSchedule();
+
+    function saveEvents() {
+      localStorage.setItem('chrono_events_v3', JSON.stringify(events));
+      renderCalendar();
+      renderSidebarAgenda();
+      updateNextClassWidget();
+    }
+
+    function saveCities() {
+      localStorage.setItem('chrono_cities_v2', JSON.stringify(cities));
+      renderWorldClockCards();
+      loadAllWeather();
+    }
+
+    const weatherMap = {
+      0: { emoji: '☀️', desc: 'Clear sky' },
+      1: { emoji: '🌤️', desc: 'Mainly clear' },
+      2: { emoji: '⛅', desc: 'Partly cloudy' },
+      3: { emoji: '☁️', desc: 'Overcast' },
+      45: { emoji: '🌫️', desc: 'Foggy' },
+      48: { emoji: '🌫️', desc: 'Depositing rime fog' },
+      51: { emoji: '🌦️', desc: 'Light drizzle' },
+      53: { emoji: '🌦️', desc: 'Moderate drizzle' },
+      55: { emoji: '🌧️', desc: 'Dense drizzle' },
+      61: { emoji: '🌧️', desc: 'Slight rain' },
+      63: { emoji: '🌧️', desc: 'Moderate rain' },
+      65: { emoji: '⛈️', desc: 'Heavy rain' },
+      71: { emoji: '❄️', desc: 'Slight snow' },
+      73: { emoji: '❄️', desc: 'Moderate snow' },
+      75: { emoji: '❄️', desc: 'Heavy snow' },
+      80: { emoji: '🌧️', desc: 'Rain showers' },
+      81: { emoji: '🌧️', desc: 'Moderate showers' },
+      82: { emoji: '⛈️', desc: 'Violent showers' },
+      95: { emoji: '⛈️', desc: 'Thunderstorm' },
+      96: { emoji: '⛈️', desc: 'Thunderstorm with hail' },
+      99: { emoji: '⛈️', desc: 'Thunderstorm with heavy hail' }
+    };
+
+    function formatTemp(celsiusVal) {
+      if (celsiusVal === undefined || celsiusVal === null || isNaN(celsiusVal)) return '--';
+      if (tempUnit === 'F') {
+        const f = Math.round((celsiusVal * 9 / 5) + 32);
+        return `${f}°F`;
+      }
+      return `${Math.round(celsiusVal)}°C`;
+    }
+
+    async function fetchWeatherForCity(city) {
+      const weatherBadge = document.getElementById(`wc-weather-${city.id}`);
+      if (weatherBadge) {
+        weatherBadge.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-[10px]"></i> Loading`;
+      }
+
+      try {
+        const response = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+
+        if (!data.current) throw new Error('No current weather data');
+
+        weatherCache[city.id] = data;
+        updateCityWeatherDisplay(city.id);
+      } catch (error) {
+        console.error(`Weather error for ${city.name}:`, error);
+        if (weatherBadge) {
+          weatherBadge.textContent = '⚠️ Unavailable';
+          weatherBadge.className = 'wc-weather text-xs bg-red-500/10 text-red-600 dark:text-red-400 px-2 py-1 rounded-md font-medium cursor-pointer';
+        }
+      }
+    }
+
+    function updateCityWeatherDisplay(cityId) {
+      const data = weatherCache[cityId];
+      const weatherBadge = document.getElementById(`wc-weather-${cityId}`);
+      if (!data || !weatherBadge) return;
+
+      const { temperature_2m, weather_code } = data.current;
+      const weatherInfo = weatherMap[weather_code] || { emoji: '🌡️', desc: 'Weather' };
+      
+      weatherBadge.textContent = `${weatherInfo.emoji} ${formatTemp(temperature_2m)} · ${weatherInfo.desc}`;
+      weatherBadge.className = 'wc-weather text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-md font-medium transition cursor-pointer flex items-center gap-1';
+    }
+
+    async function loadAllWeather() {
+      const refreshBtn = document.getElementById('refreshIcon');
+      if (refreshBtn) refreshBtn.classList.add('animate-spin');
+
+      lastWeatherFetchTime = new Date();
+      updateWeatherTimestampText();
+
+      const fetchPromises = cities.map(city => fetchWeatherForCity(city));
+      await Promise.allSettled(fetchPromises);
+
+      if (refreshBtn) {
+        setTimeout(() => refreshBtn.classList.remove('animate-spin'), 600);
+      }
+    }
+
+    function updateWeatherTimestampText() {
+      const tsElem = document.getElementById('weatherUpdateTimestamp');
+      if (!tsElem) return;
+
+      if (!lastWeatherFetchTime) {
+        tsElem.innerHTML = `<i class="fa-solid fa-cloud-sun text-slate-400"></i> Updating weather...`;
+        return;
+      }
+
+      const diffSecs = Math.floor((new Date() - lastWeatherFetchTime) / 1000);
+      let text = 'Just now';
+      if (diffSecs > 120) {
+        const mins = Math.floor(diffSecs / 60);
+        text = `${mins} mins ago`;
+      } else if (diffSecs >= 60) {
+        text = '1 min ago';
+      }
+
+      const formattedTime = lastWeatherFetchTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      tsElem.innerHTML = `<i class="fa-solid fa-cloud-sun text-blue-500"></i> Weather updated ${text} (${formattedTime})`;
+    }
+
+    function showWeatherModal(cityId) {
+      const city = cities.find(c => c.id === cityId);
+      const data = weatherCache[cityId];
+      if (!city || !data) return;
+
+      document.getElementById('weatherModalCity').textContent = city.name;
+      document.getElementById('weatherModalCountry').textContent = city.country;
+
+      const current = data.current;
+      const weatherInfo = weatherMap[current.weather_code] || { emoji: '🌡️', desc: 'Weather' };
+
+      document.getElementById('weatherModalEmoji').textContent = weatherInfo.emoji;
+      document.getElementById('weatherModalTemp').textContent = formatTemp(current.temperature_2m);
+      document.getElementById('weatherModalCondition').textContent = weatherInfo.desc;
+      document.getElementById('weatherModalFeelsLike').textContent = formatTemp(current.apparent_temperature);
+      document.getElementById('weatherModalHumidity').textContent = `${current.relative_humidity_2m}%`;
+      document.getElementById('weatherModalWind').textContent = `${Math.round(current.wind_speed_10m)} km/h`;
+
+      const forecastContainer = document.getElementById('weatherForecastContainer');
+      forecastContainer.innerHTML = '';
+
+      if (data.daily && data.daily.time) {
+        for (let i = 0; i < Math.min(3, data.daily.time.length); i++) {
+          const dateStr = data.daily.time[i];
+          const dateObj = new Date(dateStr + 'T00:00:00');
+          const dayName = i === 0 ? 'Today' : dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+          const code = data.daily.weather_code[i];
+          const dailyWeather = weatherMap[code] || { emoji: '☀️', desc: '' };
+          const maxTemp = formatTemp(data.daily.temperature_2m_max[i]);
+          const minTemp = formatTemp(data.daily.temperature_2m_min[i]);
+
+          const card = document.createElement('div');
+          card.className = 'bg-slate-100 dark:bg-slate-800 p-3 rounded-xl text-center space-y-1';
+          card.innerHTML = `
+            <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">${dayName}</div>
+            <div class="text-2xl py-1">${dailyWeather.emoji}</div>
+            <div class="text-xs font-bold text-slate-800 dark:text-slate-100">${maxTemp}</div>
+            <div class="text-[10px] text-slate-400">${minTemp}</div>
+          `;
+          forecastContainer.appendChild(card);
+        }
+      }
+
+      document.getElementById('weatherDetailModal').classList.remove('hidden');
+    }
+
+    function renderWorldClockCards() {
+      const container = document.getElementById('worldclockList');
+      container.innerHTML = '';
+
+      cities.forEach(city => {
+        const card = document.createElement('div');
+        card.className = 'wc-item bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 p-4 rounded-xl border border-slate-200/80 dark:border-slate-700/60 transition shadow-sm relative group';
+        
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="wc-city font-bold text-base text-slate-900 dark:text-white block flex items-center gap-1.5">
+                ${city.name}
+                ${!city.isDefault ? `<button onclick="removeCity(event, '${city.id}')" class="opacity-0 group-hover:opacity-100 text-xs text-red-400 hover:text-red-600 ml-1 transition" title="Remove city"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+              </span>
+              <span class="text-xs text-slate-500 dark:text-slate-400">${city.country}</span>
+            </div>
+            <span id="wc-weather-${city.id}" onclick="showWeatherModal('${city.id}')" class="wc-weather text-xs bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-md font-medium cursor-pointer">
+              ⏳ Loading...
+            </span>
+          </div>
+          <div class="mt-3 flex items-baseline justify-between">
+            <span class="wc-time font-mono font-bold text-2xl text-blue-600 dark:text-blue-400" data-tz="${city.tz}">--:--:-- --</span>
+            <span class="wc-date text-xs text-slate-500 dark:text-slate-400 font-medium" data-tz="${city.tz}">---, --- --</span>
+          </div>
+        `;
+        container.appendChild(card);
+
+        if (weatherCache[city.id]) {
+          updateCityWeatherDisplay(city.id);
+        }
+      });
+    }
+
+    window.removeCity = function(e, cityId) {
+      e.stopPropagation();
+      cities = cities.filter(c => c.id !== cityId);
+      delete weatherCache[cityId];
+      saveCities();
+    };
+
+    let searchDebounce = null;
+    document.getElementById('citySearchInput').addEventListener('input', (e) => {
+      clearTimeout(searchDebounce);
+      const query = e.target.value.trim();
+      if (query.length < 2) {
+        document.getElementById('citySearchResults').innerHTML = '<p class="text-xs text-slate-400 text-center py-3">Type at least 2 characters...</p>';
+        return;
+      }
+
+      searchDebounce = setTimeout(async () => {
+        try {
+          const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`);
+          if (!res.ok) throw new Error('Search failed');
+          const data = await res.json();
+          renderCitySearchResults(data.results || []);
+        } catch (err) {
+          console.error(err);
+          document.getElementById('citySearchResults').innerHTML = '<p class="text-xs text-red-400 text-center py-3">Failed to load city search results.</p>';
+        }
+      }, 300);
+    });
+
+    function renderCitySearchResults(results) {
+      const container = document.getElementById('citySearchResults');
+      container.innerHTML = '';
+
+      if (results.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">No matching cities found.</p>';
+        return;
+      }
+
+      results.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = 'w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-between border border-transparent hover:border-slate-200 dark:hover:border-slate-700';
+        const countryStr = [item.admin1, item.country].filter(Boolean).join(', ');
+        
+        btn.innerHTML = `
+          <div>
+            <span class="font-bold text-sm text-slate-800 dark:text-slate-100 block">${item.name}</span>
+            <span class="text-xs text-slate-400">${countryStr}</span>
+          </div>
+          <span class="text-[10px] text-blue-500 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-md font-mono">${item.timezone || 'UTC'}</span>
+        `;
+
+        btn.addEventListener('click', () => {
+          const newCity = {
+            id: `city_${Date.now()}`,
+            name: item.name,
+            country: countryStr || 'World',
+            lat: item.latitude,
+            lon: item.longitude,
+            tz: item.timezone || 'UTC',
+            isDefault: false
+          };
+          cities.push(newCity);
+          saveCities();
+          document.getElementById('addCityModal').classList.add('hidden');
+          document.getElementById('citySearchInput').value = '';
+        });
+
+        container.appendChild(btn);
+      });
+    }
+
+    function updateClocks() {
+      const now = new Date();
+      
+      document.querySelectorAll('.wc-time').forEach(el => {
+        const tz = el.getAttribute('data-tz');
+        try {
+          el.textContent = now.toLocaleTimeString('en-US', {
+            timeZone: tz,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          });
+        } catch(e) {
+          el.textContent = now.toLocaleTimeString();
+        }
+      });
+
+      document.querySelectorAll('.wc-date').forEach(el => {
+        const tz = el.getAttribute('data-tz');
+        try {
+          el.textContent = now.toLocaleDateString('en-US', {
+            timeZone: tz,
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+          });
+        } catch(e) {
+          el.textContent = now.toLocaleDateString();
+        }
+      });
+
+      updateNextClassWidget();
+      updateWeatherTimestampText();
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      document.getElementById('calendarTitle').textContent = `${monthNames[month]} ${year}`;
+
+      const firstDayIndex = new Date(year, month, 1).getDay();
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      const prevMonthTotalDays = new Date(year, month, 0).getDate();
+
+      for (let i = firstDayIndex - 1; i >= 0; i--) {
+        const dayNum = prevMonthTotalDays - i;
+        const cell = createCell(dayNum, true);
+        grid.appendChild(cell);
+      }
+
+      const today = new Date();
+      for (let day = 1; day <= totalDays; day++) {
+        const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+        const formattedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        const cell = createCell(day, false, isToday, formattedDateStr);
+        grid.appendChild(cell);
+      }
+
+      const totalRendered = firstDayIndex + totalDays;
+      const nextDays = (totalRendered > 35) ? 42 - totalRendered : 35 - totalRendered;
+      for (let day = 1; day <= nextDays; day++) {
+        const cell = createCell(day, true);
+        grid.appendChild(cell);
+      }
+    }
+
+    function createCell(dayNumber, isInactive, isToday = false, dateStr = '') {
+      const cell = document.createElement('div');
+      cell.className = `min-h-[55px] sm:min-h-[75px] md:min-h-[90px] p-1 sm:p-1.5 md:p-2 bg-white dark:bg-slate-900 transition flex flex-col justify-between ${
+        isInactive ? 'opacity-40 bg-slate-50/50 dark:bg-slate-900/40' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer active:bg-blue-50/50'
+      }`;
+
+      const header = document.createElement('div');
+      header.className = 'flex justify-between items-center';
+
+      const numSpan = document.createElement('span');
+      numSpan.className = `text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full ${
+        isToday ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-700 dark:text-slate-300'
+      }`;
+      numSpan.textContent = dayNumber;
+      header.appendChild(numSpan);
+
+      cell.appendChild(header);
+
+      if (!isInactive && dateStr) {
+        const dayEvents = events.filter(e => e.date === dateStr);
+        const eventContainer = document.createElement('div');
+        eventContainer.className = 'space-y-1 mt-1 overflow-y-auto max-h-[70px]';
+
+        dayEvents.forEach(evt => {
+          const badge = document.createElement('div');
+          const colorClasses = {
+            blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 border-blue-200 dark:border-blue-700',
+            emerald: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700',
+            purple: 'bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300 border-purple-200 dark:border-purple-700',
+            amber: 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border-amber-200 dark:border-amber-700'
+          };
+
+          badge.className = `text-[10px] font-medium px-1.5 py-0.5 rounded border truncate flex items-center justify-between group ${colorClasses[evt.category] || colorClasses.blue}`;
+          badge.innerHTML = `
+            <span class="truncate">${evt.time} ${evt.title}</span>
+            <button onclick="deleteEvent(event, '${evt.id}')" class="opacity-0 group-hover:opacity-100 ml-1 text-red-500 hover:text-red-700">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          `;
+          eventContainer.appendChild(badge);
+        });
+
+        cell.appendChild(eventContainer);
+
+        cell.addEventListener('click', (e) => {
+          if (!e.target.closest('button')) {
+            openModal(dateStr);
+          }
+        });
+      }
+
+      return cell;
+    }
+
+    function getEventDateObj(evt) {
+      if (!evt || !evt.date || !evt.time) return new Date();
+      const [y, m, d] = evt.date.split('-').map(Number);
+      const [h, min] = evt.time.split(':').map(Number);
+      const tz = evt.tz || 'America/Indiana/Indianapolis';
+
+      const naiveUtc = Date.UTC(y, m - 1, d, h, min);
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+      });
+
+      let targetTime = naiveUtc;
+      for (let i = 0; i < 3; i++) {
+        const parts = formatter.formatToParts(new Date(targetTime));
+        const map = {};
+        parts.forEach(p => map[p.type] = p.value);
+        const formattedHour = map.hour === '24' ? 0 : parseInt(map.hour || '0', 10);
+        const formattedDate = Date.UTC(
+          parseInt(map.year, 10),
+          parseInt(map.month, 10) - 1,
+          parseInt(map.day, 10),
+          formattedHour,
+          parseInt(map.minute, 10)
+        );
+        const diff = naiveUtc - formattedDate;
+        if (diff === 0) break;
+        targetTime += diff;
+      }
+      return new Date(targetTime);
+    }
+
+    function renderSidebarAgenda() {
+      const container = document.getElementById('sidebarAgenda');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (events.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-400">No scheduled events</p>';
+        return;
+      }
+
+      const now = new Date();
+      const lafayetteTz = 'America/Indiana/Indianapolis';
+
+      const mappedEvents = events.map(evt => {
+        const fullDate = getEventDateObj(evt);
+        return { ...evt, fullDate };
+      });
+
+      let upcoming = mappedEvents.filter(e => e.fullDate >= now).sort((a, b) => a.fullDate - b.fullDate);
+      
+      if (upcoming.length === 0) {
+        upcoming = mappedEvents.sort((a, b) => a.fullDate - b.fullDate);
+      }
+
+      const nextTwo = upcoming.slice(0, 2);
+
+      nextTwo.forEach(evt => {
+        const timeStr = evt.fullDate.toLocaleTimeString('en-US', {
+          timeZone: lafayetteTz,
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        const dateStr = evt.fullDate.toLocaleDateString('en-US', {
+          timeZone: lafayetteTz,
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        });
+
+        const fullClassName = evt.name || courseTitles[evt.title] || evt.title;
+
+        const item = document.createElement('div');
+        item.className = 'p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-xs shadow-sm space-y-1';
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-900 dark:text-white truncate">${evt.title}</span>
+            <span class="text-[10px] font-semibold text-slate-500 bg-slate-200/80 dark:bg-slate-700/80 px-1.5 py-0.5 rounded shrink-0">
+              ${evt.location || 'ET'}
+            </span>
+          </div>
+          <p class="text-[11px] text-blue-600 dark:text-blue-400 font-medium truncate">${fullClassName}</p>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 pt-0.5 flex items-center gap-1">
+            <i class="fa-regular fa-clock text-[10px]"></i>
+            <span>${dateStr} @ ${timeStr}</span>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function updateNextClassWidget() {
+      const widget = document.getElementById('nextClassWidget');
+      const widgetTitle = document.getElementById('nextClassTitle');
+      const widgetName = document.getElementById('nextClassName');
+      const widgetTime = document.getElementById('nextClassTime');
+      const widgetLoc = document.getElementById('nextClassLoc');
+      const widgetCountdown = document.getElementById('nextClassCountdown');
+      const widgetBadge = document.getElementById('nextClassBadge');
+      const widgetPing = document.getElementById('nextClassPing');
+      const widgetLabel = document.getElementById('nextClassLabel');
+
+      if (!widgetTitle) return;
+
+      const now = new Date();
+
+      const sortedEvents = [...events].map(evt => {
+        const fullDate = getEventDateObj(evt);
+        const durationMinutes = evt.duration || 50;
+        const endDate = new Date(fullDate.getTime() + durationMinutes * 60 * 1000);
+        return { ...evt, fullDate, endDate };
+      }).sort((a, b) => a.fullDate - b.fullDate);
+
+      document.querySelectorAll('.wc-item').forEach(card => {
+        card.classList.remove('ring-2', 'ring-emerald-500', 'border-emerald-500/50');
+      });
+
+      const activeClass = sortedEvents.find(e => now >= e.fullDate && now < e.endDate);
+
+      if (activeClass) {
+        if (widget) {
+          widget.className = "mt-4 p-4 rounded-xl bg-gradient-to-br from-emerald-950 via-slate-900 to-emerald-900 border border-emerald-500/50 shadow-lg shadow-emerald-950/40 text-white transition-all duration-500 ring-2 ring-emerald-500/30";
+        }
+
+        const activeTz = activeClass.tz;
+        document.querySelectorAll('.wc-time').forEach(timeEl => {
+          if (timeEl.getAttribute('data-tz') === activeTz) {
+            const wcCard = timeEl.closest('.wc-item');
+            if (wcCard) {
+              wcCard.classList.add('ring-2', 'ring-emerald-500', 'border-emerald-500/50');
+            }
+          }
+        });
+
+        widgetTitle.textContent = activeClass.title;
+        if (widgetName) {
+          widgetName.textContent = activeClass.name || courseTitles[activeClass.title] || '';
+        }
+        widgetLoc.textContent = activeClass.location || 'Purdue Campus';
+
+        const startTimeStr = activeClass.fullDate.toLocaleTimeString('en-US', { timeZone: 'America/Indiana/Indianapolis', hour: '2-digit', minute: '2-digit' });
+        const endTimeStr = activeClass.endDate.toLocaleTimeString('en-US', { timeZone: 'America/Indiana/Indianapolis', hour: '2-digit', minute: '2-digit' });
+        widgetTime.textContent = `${startTimeStr} - ${endTimeStr} (ET)`;
+
+        if (widgetLabel) widgetLabel.textContent = "IN CLASS NOW";
+        if (widgetBadge) widgetBadge.className = "text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5";
+        if (widgetPing) widgetPing.className = "w-2 h-2 rounded-full bg-emerald-400 animate-ping";
+
+        const diffMs = activeClass.endDate - now;
+        const totalSecs = Math.max(0, Math.floor(diffMs / 1000));
+        const diffMins = Math.floor(totalSecs / 60);
+        const diffSecs = totalSecs % 60;
+        
+        widgetCountdown.textContent = `Ends in ${String(diffMins).padStart(2, '0')}:${String(diffSecs).padStart(2, '0')}`;
+        widgetCountdown.className = "text-xs font-mono font-semibold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-500/40 animate-pulse";
+      } else {
+        if (widget) {
+          widget.className = "mt-4 p-4 rounded-xl bg-slate-900 text-white dark:bg-slate-800 dark:border dark:border-slate-700 shadow-md transition-all duration-500";
+        }
+
+        const upcoming = sortedEvents.filter(e => e.fullDate >= now);
+        const nextClass = upcoming.length > 0 ? upcoming[0] : sortedEvents[0];
+
+        if (!nextClass) {
+          widgetTitle.textContent = "No Upcoming Classes";
+          if (widgetName) widgetName.textContent = "";
+          widgetTime.textContent = "--:--";
+          widgetLoc.textContent = "None scheduled";
+          widgetCountdown.textContent = "N/A";
+          return;
+        }
+
+        widgetTitle.textContent = nextClass.title;
+        if (widgetName) {
+          widgetName.textContent = nextClass.name || courseTitles[nextClass.title] || '';
+        }
+        widgetLoc.textContent = nextClass.location || 'Purdue Campus';
+        
+        const timeStr = nextClass.fullDate.toLocaleTimeString('en-US', { timeZone: 'America/Indiana/Indianapolis', hour: '2-digit', minute: '2-digit' });
+        const dateStr = nextClass.fullDate.toLocaleDateString('en-US', { timeZone: 'America/Indiana/Indianapolis', weekday: 'short', month: 'short', day: 'numeric' });
+        widgetTime.textContent = `${dateStr} @ ${timeStr} (ET)`;
+
+        if (widgetLabel) widgetLabel.textContent = "NEXT CLASS";
+        if (widgetBadge) widgetBadge.className = "text-[10px] font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5";
+        if (widgetPing) widgetPing.className = "w-2 h-2 rounded-full bg-blue-500 animate-ping";
+        widgetCountdown.className = "text-xs font-mono font-semibold bg-blue-600/30 text-blue-300 px-2 py-0.5 rounded-md border border-blue-500/30";
+
+        const diffMs = nextClass.fullDate - now;
+        if (diffMs > 0) {
+          const totalSecs = Math.floor(diffMs / 1000);
+          const diffDays = Math.floor(totalSecs / (3600 * 24));
+          const diffHrs = Math.floor((totalSecs % (3600 * 24)) / 3600);
+          const diffMins = Math.floor((totalSecs % 3600) / 60);
+          const diffSecs = totalSecs % 60;
+
+          if (diffDays > 0) {
+            widgetCountdown.textContent = `${diffDays}d ${diffHrs}h ${diffMins}m`;
+          } else {
+            widgetCountdown.textContent = `${String(diffHrs).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}:${String(diffSecs).padStart(2, '0')}`;
+          }
+        } else {
+          widgetCountdown.textContent = "In Progress";
+        }
+      }
+    }
+
+    window.deleteEvent = function(e, id) {
+      e.stopPropagation();
+      events = events.filter(evt => evt.id !== id);
+      saveEvents();
+    };
+
+    const modal = document.getElementById('eventModal');
+    function openModal(dateStr = '') {
+      document.getElementById('eventId').value = '';
+      document.getElementById('eventTitleInput').value = '';
+      document.getElementById('eventDateInput').value = dateStr || new Date().toISOString().split('T')[0];
+      document.getElementById('eventTimeInput').value = '12:00';
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+    }
+
+    document.getElementById('openAddEventModalBtn').addEventListener('click', () => openModal());
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
+
+    document.getElementById('closeWeatherModalBtn').addEventListener('click', () => {
+      document.getElementById('weatherDetailModal').classList.add('hidden');
+    });
+
+    document.getElementById('openAddCityModalBtn').addEventListener('click', () => {
+      document.getElementById('addCityModal').classList.remove('hidden');
+    });
+    document.getElementById('closeAddCityModalBtn').addEventListener('click', () => {
+      document.getElementById('addCityModal').classList.add('hidden');
+    });
+
+    document.getElementById('eventForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = document.getElementById('eventTitleInput').value;
+      const startDateStr = document.getElementById('eventDateInput').value;
+      const time = document.getElementById('eventTimeInput').value;
+      const tz = document.getElementById('eventTzInput').value;
+      const category = document.getElementById('eventCategoryInput').value;
+      const repeat = document.getElementById('eventRepeatInput').value;
+      const courseName = courseTitles[title] || title;
+
+      if (repeat === 'weekly_semester') {
+        const semesterEnd = new Date(2026, 11, 18);
+        let curr = new Date(startDateStr + 'T00:00:00');
+        while (curr <= semesterEnd) {
+          const dateStr = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`;
+          events.push({
+            id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
+            title: title,
+            name: courseName,
+            date: dateStr,
+            time: time,
+            tz: tz,
+            category: category
+          });
+          curr.setDate(curr.getDate() + 7);
+        }
+      } else {
+        events.push({
+          id: Date.now().toString(),
+          title: title,
+          name: courseName,
+          date: startDateStr,
+          time: time,
+          tz: tz,
+          category: category
+        });
+      }
+
+      saveEvents();
+      closeModal();
+    });
+
+    document.getElementById('unitToggleBtn').addEventListener('click', () => {
+      tempUnit = tempUnit === 'C' ? 'F' : 'C';
+      localStorage.setItem('chrono_temp_unit', tempUnit);
+      document.getElementById('unitToggleBtn').textContent = `°${tempUnit}`;
+      
+      cities.forEach(c => updateCityWeatherDisplay(c.id));
+    });
+
+    document.getElementById('manualRefreshWeatherBtn').addEventListener('click', () => {
+      loadAllWeather();
+    });
+
+    document.getElementById('prevMonthBtn').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar();
+    });
+
+    document.getElementById('nextMonthBtn').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar();
+    });
+
+    document.getElementById('todayBtn').addEventListener('click', () => {
+      currentDate = new Date();
+      renderCalendar();
+    });
+
+    document.getElementById('themeToggleBtn').addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+    });
+
+    window.onload = function() {
+      const mobileTabClock = document.getElementById('mobileTabClock');
+      const mobileTabCalendar = document.getElementById('mobileTabCalendar');
+      const sidebarPanel = document.getElementById('sidebarPanel');
+      const mainCalendar = document.getElementById('mainCalendar');
+
+      if (mobileTabClock && mobileTabCalendar) {
+        mobileTabClock.addEventListener('click', () => {
+          sidebarPanel.classList.remove('hidden');
+          sidebarPanel.classList.add('flex');
+          mainCalendar.classList.add('hidden');
+          mainCalendar.classList.remove('flex');
+
+          mobileTabClock.className = "px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm transition font-semibold";
+          mobileTabCalendar.className = "px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 transition";
+        });
+
+        mobileTabCalendar.addEventListener('click', () => {
+          sidebarPanel.classList.add('hidden');
+          sidebarPanel.classList.remove('flex');
+          mainCalendar.classList.remove('hidden');
+          mainCalendar.classList.add('flex');
+
+          mobileTabCalendar.className = "px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm transition font-semibold";
+          mobileTabClock.className = "px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 transition";
+        });
+      }
+
+      document.getElementById('unitToggleBtn').textContent = `°${tempUnit}`;
+
+      renderWorldClockCards();
+      updateClocks();
+      setInterval(updateClocks, 1000);
+
+      renderCalendar();
+      renderSidebarAgenda();
+
+      loadAllWeather();
+      setInterval(loadAllWeather, 600000);
+    };
+  </script>
+</body>
+</html>
