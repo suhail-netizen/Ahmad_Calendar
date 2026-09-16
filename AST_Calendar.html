@@ -399,6 +399,32 @@
     </div>
   </div>
 
+  <!-- Day Details Modal (Show All Events for Selected Date) -->
+  <div id="dayDetailsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full shadow-2xl overflow-hidden transform transition-all max-h-[90vh] flex flex-col">
+      <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center flex-shrink-0">
+        <div>
+          <h3 id="dayDetailsDate" class="text-lg font-bold text-slate-900 dark:text-white">--</h3>
+          <p id="dayDetailsDay" class="text-xs text-slate-500 dark:text-slate-400">--</p>
+        </div>
+        <button id="closeDayDetailsBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div id="dayDetailsEventsList" class="p-5 overflow-y-auto flex-1 space-y-3">
+        <!-- Events for this date rendered here -->
+      </div>
+
+      <div class="p-5 border-t border-slate-200 dark:border-slate-800 flex-shrink-0">
+        <button id="addEventFromDayBtn" class="w-full inline-flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-md shadow-blue-500/20 transition active:scale-95">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>Add Event</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // System State Variables
     let currentDate = new Date(2026, 8, 13); // Sep 2026 per schedule
@@ -829,7 +855,7 @@
     // Updated createCell function with robust event isolation for mobile taps
     function createCell(dayNumber, isInactive, isToday = false, dateStr = '') {
       const cell = document.createElement('div');
-      cell.className = `min-h-[55px] sm:min-h-[75px] md:min-h-[90px] p-1 sm:p-1.5 md:p-2 bg-white dark:bg-slate-900 transition flex flex-col justify-between ${
+      cell.className = `min-h-[100px] sm:min-h-[100px] md:min-h-[90px] p-1 sm:p-1.5 md:p-2 bg-white dark:bg-slate-900 transition flex flex-col justify-between ${
         isInactive ? 'opacity-40 bg-slate-50/50 dark:bg-slate-900/40' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer active:bg-blue-50/50'
       }`;
 
@@ -859,7 +885,7 @@
             amber: 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border-amber-200 dark:border-amber-700'
           };
 
-          badge.className = `text-[10px] font-medium px-1.5 py-0.5 rounded border truncate flex items-center justify-between group ${colorClasses[evt.category] || colorClasses.blue}`;
+          badge.className = `text-[11px] font-medium px-1.5 py-0.5 rounded border truncate flex items-center justify-between group ${colorClasses[evt.category] || colorClasses.blue}`;
           badge.innerHTML = `
             <span class="truncate">${evt.time} ${evt.title}</span>
             <button type="button" onclick="deleteEvent(event, '${evt.id}')" class="ml-1 p-1 text-red-500 hover:text-red-700 focus:outline-none">
@@ -878,9 +904,9 @@
         cell.appendChild(eventContainer);
 
         cell.addEventListener('click', (e) => {
-          // Only open the add event modal if clicking empty cell space
-          if (!e.target.closest('button') && !e.target.closest('.group')) {
-            openModal(dateStr);
+          // Only handle clicks on empty cell space
+          if (!e.target.closest('button') && !e.target.closest('.group') && !e.target.closest('i')) {
+            showDayDetailsModal(dateStr);
           }
         });
       }
@@ -1123,6 +1149,57 @@
       document.getElementById('deleteConfirmModal').classList.add('hidden');
     }
 
+    function showDayDetailsModal(dateStr) {
+      const dayEvents = events.filter(e => e.date === dateStr).sort((a, b) => a.time.localeCompare(b.time));
+
+      const dateObj = new Date(dateStr + 'T00:00:00');
+      const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+      const dateDisplay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      document.getElementById('dayDetailsDate').textContent = dateDisplay;
+      document.getElementById('dayDetailsDay').textContent = dayName;
+
+      const eventsList = document.getElementById('dayDetailsEventsList');
+      eventsList.innerHTML = '';
+
+      if (dayEvents.length === 0) {
+        eventsList.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No events scheduled for this day</p>';
+      } else {
+        dayEvents.forEach(evt => {
+          const colorClasses = {
+            blue: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-900 dark:text-blue-100',
+            emerald: 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-700 text-emerald-900 dark:text-emerald-100',
+            purple: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700 text-purple-900 dark:text-purple-100',
+            amber: 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700 text-amber-900 dark:text-amber-100'
+          };
+
+          const fullClassName = evt.name || courseTitles[evt.title] || evt.title;
+          const item = document.createElement('div');
+          item.className = `p-3 rounded-xl border ${colorClasses[evt.category] || colorClasses.blue} space-y-2`;
+          item.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-sm">${evt.title}</span>
+              <button onclick="deleteEvent(event, '${evt.id}')" class="text-xs text-red-500 hover:text-red-700">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+            <p class="text-xs opacity-90">${fullClassName}</p>
+            <div class="flex items-center gap-2 text-xs opacity-75">
+              <i class="fa-regular fa-clock"></i>
+              <span>${evt.time}</span>
+            </div>
+            ${evt.location ? `<div class="flex items-center gap-2 text-xs opacity-75">
+              <i class="fa-solid fa-location-dot"></i>
+              <span>${evt.location}</span>
+            </div>` : ''}
+          `;
+          eventsList.appendChild(item);
+        });
+      }
+
+      document.getElementById('dayDetailsModal').classList.remove('hidden');
+    }
+
     const modal = document.getElementById('eventModal');
     function openModal(dateStr = '') {
       document.getElementById('eventId').value = '';
@@ -1149,6 +1226,18 @@
     });
     document.getElementById('closeAddCityModalBtn').addEventListener('click', () => {
       document.getElementById('addCityModal').classList.add('hidden');
+    });
+
+    document.getElementById('closeDayDetailsBtn').addEventListener('click', () => {
+      document.getElementById('dayDetailsModal').classList.add('hidden');
+    });
+
+    document.getElementById('addEventFromDayBtn').addEventListener('click', () => {
+      const dateStr = document.getElementById('dayDetailsDate').textContent;
+      const dateObj = new Date(dateStr);
+      const formattedDate = dateObj.toISOString().split('T')[0];
+      document.getElementById('dayDetailsModal').classList.add('hidden');
+      openModal(formattedDate);
     });
 
     document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDeleteEvent);
