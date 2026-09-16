@@ -803,6 +803,7 @@
       }
     }
 
+    // Updated createCell function with robust event isolation for mobile taps
     function createCell(dayNumber, isInactive, isToday = false, dateStr = '') {
       const cell = document.createElement('div');
       cell.className = `min-h-[55px] sm:min-h-[75px] md:min-h-[90px] p-1 sm:p-1.5 md:p-2 bg-white dark:bg-slate-900 transition flex flex-col justify-between ${
@@ -838,17 +839,24 @@
           badge.className = `text-[10px] font-medium px-1.5 py-0.5 rounded border truncate flex items-center justify-between group ${colorClasses[evt.category] || colorClasses.blue}`;
           badge.innerHTML = `
             <span class="truncate">${evt.time} ${evt.title}</span>
-            <button onclick="deleteEvent(event, '${evt.id}')" class="opacity-0 group-hover:opacity-100 ml-1 text-red-500 hover:text-red-700">
+            <button type="button" onclick="deleteEvent(event, '${evt.id}')" class="ml-1 p-1 text-red-500 hover:text-red-700 focus:outline-none">
               <i class="fa-solid fa-xmark"></i>
             </button>
           `;
+
+          // Stop tapping the class badge itself from opening the edit modal or firing parent cell events
+          badge.addEventListener('click', (e) => {
+            e.stopPropagation();
+          });
+
           eventContainer.appendChild(badge);
         });
 
         cell.appendChild(eventContainer);
 
         cell.addEventListener('click', (e) => {
-          if (!e.target.closest('button')) {
+          // Only open the add event modal if clicking empty cell space
+          if (!e.target.closest('button') && !e.target.closest('.group')) {
             openModal(dateStr);
           }
         });
